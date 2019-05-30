@@ -20,7 +20,7 @@ ds = tf.data.Dataset.from_generator(
 
 in_shp = ds.output_shapes[0].as_list()
 
-dr = 0.5 # dropout rate (%)
+dr = 0.5
 model = models.Sequential()
 model.add(Reshape([1]+in_shp, input_shape=in_shp))
 model.add(ZeroPadding2D((0, 2)))
@@ -39,7 +39,7 @@ model.compile(loss='categorical_crossentropy', optimizer='adam')
 model.summary()
 
 
-#Set up some params 
+#Set up train parameters
 nb_epoch = 100     # number of epochs to train on
 batch_size = 1  # training batch size
 dataset = ds.shuffle(buffer_size=5000)
