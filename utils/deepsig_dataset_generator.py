@@ -23,6 +23,7 @@ class deepsig_dataset_generator():
         self.total_samples_num = self.modulations[:,0].size
         self.modulations_num = self.modulations[0,:].size
         self.snr_num = 26
+        self.samples_per_snr_mod = 4096
         self.mod_classes = self.list_modulations()
         self.modarg = modulation
         self.snrarg = snr
@@ -46,6 +47,16 @@ class deepsig_dataset_generator():
         class_list[0] = class_list[0].split("classes = ['")[1]
         class_list[-1] = class_list[-1].split("']\n")[0]
         return class_list
+    
+    def get_total_samples(self):
+        if self.modarg is not None and self.snrarg is not None:
+            return len(self.modarg)*len(self.snrarg)*self.samples_per_snr_mod
+        elif self.modarg is None:
+            return len(self.snrarg)*self.modulations_num*self.samples_per_snr_mod
+        elif self.snrarg is None:
+            return len(self.modarg)*self.snr_num*self.samples_per_snr_mod
+        else:
+            return self.total_samples_num
     
     '''
     Get data from the dataset.

@@ -47,11 +47,13 @@ class signn_modeler():
         model.add(Activation('softmax'))
         model.add(Reshape([24]))
         model.compile(loss='categorical_crossentropy', optimizer='adam')
-        model.summary()
         return model
         
     def export_model(self):
         self.model.save(self.destination)
+        
+    def print_model_summary(self):
+        self.model.summary()
         
 def argument_parser():
     description = 'A tool to generate models using Keras/Tensorflow'
@@ -64,8 +66,8 @@ def argument_parser():
                         type=int, help='Set the model\'s input shape', required=True)
     parser.add_argument("-s", "--save", dest="destination", action='store',
                         help="Export the generated model at the given path.")
-    
-
+    parser.add_argument("-v", "--verbose", dest="verbose", action='store_true',
+                        help="Print info regarding the generated model.")
     return parser
 
 def main(modeler=signn_modeler, args=None):
@@ -75,6 +77,8 @@ def main(modeler=signn_modeler, args=None):
     m = modeler(model=args.model, input_shape=args.input_shape, destination=args.destination)
     if (args.destination):
         m.export_model()
+    if (args.verbose):
+        m.print_model_summary()
 
 if __name__ == '__main__':
     main()
