@@ -36,7 +36,7 @@ class signn_modeler():
         model.add(Dense(24, name="dense2"))
         model.add(Activation('softmax'))
         model.add(Reshape([24]))
-        model.compile(loss='categorical_crossentropy', optimizer='adam')
+        model.compile(loss='sparse_categorical_crossentropy', optimizer='adam')
         return model
 
     def export_model(self):
