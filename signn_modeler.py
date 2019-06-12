@@ -21,13 +21,14 @@ class signn_modeler():
     def get_deepsig_cnn(self):
         dr = 0.5
         model = models.Sequential()
-        model.add(Reshape([1]+self.input_shape, input_shape=self.input_shape))
+        model.add(Reshape(self.input_shape + [1],
+                          input_shape=self.input_shape))
         model.add(ZeroPadding2D((0, 2)))
         model.add(Conv2D(256, (1, 3), activation="relu", name="conv1",
                          padding="valid", kernel_initializer="glorot_uniform"))
         model.add(Dropout(dr))
         model.add(ZeroPadding2D((0, 2)))
-        model.add(Conv2D(256, (1, 3), activation="relu", name="conv12",
+        model.add(Conv2D(80, (1, 3), activation="relu", name="conv12",
                          padding="valid", kernel_initializer="glorot_uniform"))
         model.add(Dropout(dr))
         model.add(Flatten())
