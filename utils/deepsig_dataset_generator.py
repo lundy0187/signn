@@ -11,26 +11,32 @@ class deepsig_dataset_generator():
         self.dataset = h5py.File(dataset_path+"/GOLD_XYZ_OSC.0001_1024.hdf5",
                                  'r')
         self.__init_data()
-        self.__init_modulations()
+        self.__init_modulations(modulation)
         self.__init_snr()
         self.snr_num = 26
         self.samples_per_snr_mod = 4096
-        self.modulations_num = self.modulations[0, :].size
         self.mod_classes = self.list_modulations()
         self.modarg = modulation
         self.snrarg = snr
         self.total_samples_num = self.get_total_samples()
         # TODO: Add check for the split ratio list dimension
         self.split_ratio = split_ratio
-        self.train_samples = int(split_ratio[0]*self.total_samples_num/24)
-        self.valid_samples = int(split_ratio[1]*self.total_samples_num/24)
-        self.test_samples = int(split_ratio[2]*self.total_samples_num/24)
+        self.train_samples = int(split_ratio[0] *
+                                 self.total_samples_num/self.mods_num)
+        self.valid_samples = int(split_ratio[1] *
+                                 self.total_samples_num/self.mods_num)
+        self.test_samples = int(split_ratio[2] *
+                                self.total_samples_num/self.mods_num)
 
     def __init_data(self):
         self.data = self.dataset['X']
 
-    def __init_modulations(self):
+    def __init_modulations(self, modulation):
         self.modulations = self.dataset['Y']
+        if modulation is not None:
+            self.mods_num = len(modulation)
+        else:
+            self.mods_num = len(self.list_modulations())
 
     def __init_snr(self):
         self.snr = self.dataset['Z']
@@ -51,7 +57,7 @@ class deepsig_dataset_generator():
             return len(self.modarg)*len(self.snrarg)*self.samples_per_snr_mod
         elif self.modarg is None:
             return (len(self.snrarg) *
-                    self.modulations_num *
+                    self.mods_num *
                     self.samples_per_snr_mod)
         elif self.snrarg is None:
             return len(self.modarg)*self.snr_num*self.samples_per_snr_mod
@@ -125,13 +131,13 @@ class deepsig_dataset_generator():
         if self.modarg is None:
             self.modarg = self.list_modulations()
 
-        print("Total samples: ", self.total_samples_num)
-        print("Training samples: ", self.train_samples*24)
-        print("Validation samples: ", self.valid_samples*24)
-        print("Testing samples: ", self.test_samples*24)
-        print('Loss:',
-              (self.train_samples+self.valid_samples+self.test_samples) -
-              self.total_samples_num/24)
+        # print("Total samples: ", self.total_samples_num)
+        # print("Training samples: ", self.train_samples*self.mods_num)
+        # print("Validation samples: ", self.valid_samples*self.mods_num)
+        # print("Testing samples: ", self.test_samples*self.mods_num)
+        # print('Loss:',
+        #       (self.train_samples+self.valid_samples+self.test_samples) -
+        #       self.total_samples_num/self.mods_num)
 
         mods = self.__get_index(self.modarg, self.mod_classes)
         for column in (self.snr[:] == self.snrarg).T:

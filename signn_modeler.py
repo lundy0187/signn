@@ -8,9 +8,10 @@ from tensorflow.python.keras.layers.convolutional import (Conv2D,
 
 class signn_modeler():
 
-    def __init__(self, model, input_shape, destination):
+    def __init__(self, model, input_shape, target_num, destination):
         self.model_choice = model
         self.input_shape = input_shape
+        self.target_num = target_num
         self.model = self.get_model()
         self.destination = destination
 
@@ -34,9 +35,9 @@ class signn_modeler():
         model.add(Flatten())
         model.add(Dense(256, activation='relu', name="dense1"))
         model.add(Dropout(dr))
-        model.add(Dense(24, name="dense2"))
+        model.add(Dense(self.target_num, name="dense2"))
         model.add(Activation('softmax'))
-        model.add(Reshape([24]))
+        model.add(Reshape([self.target_num]))
         model.compile(loss='sparse_categorical_crossentropy', optimizer='adam')
         return model
 
@@ -59,6 +60,9 @@ def argument_parser():
     parser.add_argument("-i", "--input-shape", dest="input_shape", nargs='+',
                         type=int, help='Set the model\'s input shape',
                         required=True)
+    parser.add_argument("-n", "--target-num", dest="target_num",
+                        type=int, help='Set the number of target classes.',
+                        required=True)
     parser.add_argument("-s", "--save", dest="destination", action='store',
                         help="Export the generated model at the given path.")
     parser.add_argument("-v", "--verbose", dest="verbose", action='store_true',
@@ -71,7 +75,7 @@ def main(modeler=signn_modeler, args=None):
         args = argument_parser().parse_args()
 
     m = modeler(model=args.model, input_shape=args.input_shape,
-                destination=args.destination)
+                target_num=args.target_num, destination=args.destination,)
     if (args.destination):
         m.export_model()
     if (args.verbose):
