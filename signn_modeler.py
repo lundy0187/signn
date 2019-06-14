@@ -60,9 +60,8 @@ def argument_parser():
     parser.add_argument("-i", "--input-shape", dest="input_shape", nargs='+',
                         type=int, help='Set the model\'s input shape',
                         required=True)
-    parser.add_argument("-n", "--target-num", dest="target_num",
-                        type=int, help='Set the number of target classes.',
-                        required=True)
+    parser.add_argument("-n", "--target-num", dest="target_num", default=24,
+                        type=int, help='Set the number of target classes.')
     parser.add_argument("-s", "--save", dest="destination", action='store',
                         help="Export the generated model at the given path.")
     parser.add_argument("-v", "--verbose", dest="verbose", action='store_true',

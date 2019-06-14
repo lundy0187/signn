@@ -1,8 +1,10 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import tensorflow as tf
 import itertools
 import os
 import errno
+import io
 
 
 class plotter():
@@ -21,7 +23,7 @@ class plotter():
         # Normalize the confusion matrix.
         cm = np.around(cm.astype('float') / cm.sum(axis=1)[:, np.newaxis],
                        decimals=2)
-        plt.figure(figsize=(20, 20))
+        figure = plt.figure(figsize=(15, 15))
         im = plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
         plt.title("Confusion matrix")
         plt.colorbar(im)
@@ -40,15 +42,32 @@ class plotter():
         plt.xlabel('Predicted label')
         plt.savefig(self.dest_path+filename,
                     bbox_inches='tight')
+        return figure
 
     def plot_training_validation_loss(self, history, filename):
-        plt.figure()
+        figure = plt.figure()
         plt.title('Training Performance')
         plt.plot(history.epoch, history.history['loss'],
                  label='Train Loss + Error')
         plt.plot(history.epoch, history.history['val_loss'],
                  label='Validation Error')
         plt.legend()
-        plt.savefig(self.dest_path+filename,
-                    bbox_inches='tight')
+        # plt.savefig(self.dest_path+filename,
+        #             bbox_inches='tight')
+        return figure
 
+    def plot_to_image(self, figure):
+        """Converts the matplotlib plot specified by 'figure' to a PNG image and
+        returns it. The supplied figure is closed and inaccessible after this call."""
+        # Save the plot to a PNG in memory.
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png')
+        # Closing the figure prevents it from being displayed directly inside
+        # the notebook.
+        plt.close(figure)
+        buf.seek(0)
+        # Convert PNG buffer to TF image
+        image = tf.image.decode_png(buf.getvalue(), channels=4)
+        # Add the batch dimension
+        image = tf.expand_dims(image, 0)
+        return image

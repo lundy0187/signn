@@ -43,7 +43,8 @@ class signn_trainer():
         self.__init_model()
         self.logdir = "logs/plots/" + datetime.now().strftime("%Y%m%d-%H%M%S")
         self.artifacts_dest = artifacts_dest
-        self.file_writer = tf.summary.create_file_writer(self.logdir)
+        self.file_writer_cm = tf.summary.create_file_writer(
+            self.logdir + '/cm')
         self.plotter = plt.plotter(artifacts_dest)
 
     def get_available_gpus():
@@ -111,13 +112,36 @@ class signn_trainer():
             cm, self.dataset_parser.list_modulations(), "conf_new.png")
         # self.plotter.plot_training_validation_loss()
 
+    def __log_confusion_matrix(self):
+        print("Logging to Tensorboard")
+        predictions = self.model.predict(self.test_dataset)
+        truth_labels = np.array([])
+        for i in self.test_dataset:
+            truth_labels = np.concatenate((truth_labels, np.array(i[1])),
+                                          axis=None)
+        cm = sklearn.metrics.confusion_matrix(truth_labels,
+                                              np.argmax(predictions, axis=1))
+        # TODO: Handle the case of modulation subset
+        # cm = cm[len(np.unique(truth_labels)):,
+        #         0:len(np.unique(truth_labels))]
+        figure = self.plotter.plot_confusion_matrix(
+            cm, self.dataset_parser.list_modulations(), "conf_new.png")
+        cm_image = self.plotter.plot_to_image(figure)
+
+        with self.file_writer_cm.as_default():
+            tf.summary.image("Confusion Matrix", cm_image, step=1)
+
     def train(self):
         filepath = self.artifacts_dest+"/trained_model.h5"
         callback_list = [
             clbck.ModelCheckpoint(filepath, monitor='val_loss', verbose=0,
                                   save_best_only=True, mode='auto'),
             clbck.EarlyStopping(monitor='val_loss', patience=5, verbose=0,
-                                mode='auto')]
+                                mode='auto'),
+            clbck.TensorBoard(log_dir=self.logdir),
+            clbck.LambdaCallback(on_epoch_end=lambda epoch, logs:
+                                 (self.__log_confusion_matrix()))]
+
         self.history = self.model.fit(x=self.train_dataset,
                                       epochs=self.epochs,
                                       steps_per_epoch=self.steps_per_epoch,
