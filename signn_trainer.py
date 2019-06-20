@@ -10,15 +10,16 @@ import tensorflow.python.keras.callbacks as clbck
 from tensorflow.python.client import device_lib
 from datetime import datetime
 
-from utils import deepsig_dataset_generator as ddg
+from utils import dataset_generator as dg
 from utils import plotter as plt
 
 
 class signn_trainer():
 
-    def __init__(self, dataset_path, model_path, epochs, steps_per_epoch,
-                 batch_size, shuffle, shuffle_buffer_size, split_ratio,
-                 validation_steps, artifacts_dest):
+    def __init__(self, dataset_path, dataset_name, model_path, epochs,
+                 steps_per_epoch, batch_size, shuffle, shuffle_buffer_size,
+                 split_ratio, validation_steps, artifacts_dest, snr,
+                 modulation):
         self.batch_size = batch_size
         self.epochs = epochs
         self.steps_per_epoch = steps_per_epoch
@@ -28,9 +29,11 @@ class signn_trainer():
         self.validation_steps = validation_steps
         self.dataset_path = dataset_path
         self.model_path = model_path
-        self.dataset_parser = ddg.deepsig_dataset_generator(
+        self.dataset_parser = dg.dataset_generator(
             self.dataset_path,
-            snr=[20],
+            dataset_name,
+            snr=snr,
+            modulation=modulation,
             split_ratio=split_ratio)
         self.train_samples_num = int((self.split_ratio[0]*self.dataset_parser
                                       .get_total_samples()))
@@ -177,8 +180,12 @@ def argument_parser():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         description=description)
-    parser.add_argument("-d --dataset-path", dest="dataset_path",
-                        action="store", help="Set dataset path.")
+    parser.add_argument("-p --dataset-path", dest="dataset_path",
+                        required=True, action="store",
+                        help="Set dataset path.")
+    parser.add_argument("-d --dataset-name", dest="dataset_name",
+                        required=True, action="store",
+                        help="Set full dataset name.")
     parser.add_argument("-m --model-path", dest="model_path", action="store",
                         default="", help="Set model path.")
     parser.add_argument("--batch-size", dest="batch_size", type=int,
@@ -195,7 +202,7 @@ def argument_parser():
                         type=int, default=100000,
                         help="Set shuffle buffer size.")
     parser.set_defaults(shuffle=True)
-    parser.add_argument("--split-ratio", default="0.8/0.2", nargs='+',
+    parser.add_argument("--split-ratio", default="0.8 0.2", nargs='+',
                         dest="split_ratio", action="store", type=float,
                         help='Set the train/validation portions. \
                             (Default: %(default)s)')
@@ -216,6 +223,14 @@ def argument_parser():
     parser.add_argument('--no-test', dest="test", action='store_false',
                         help="Disable testing.")
     parser.set_defaults(test=False)
+    parser.add_argument("--snr", default="-20", nargs='+',
+                        dest="snr", action="store", type=int,
+                        help='Set the SNR samples to extract from dataset. \
+                            (Default: %(default)s)')
+    parser.add_argument("--modulation", default=None, nargs='+',
+                        dest="modulation", action="store",
+                        help='Set the modulation samples to extract from dataset. \
+                            (Default: %(default)s)')
     return parser
 
 
@@ -223,13 +238,16 @@ def main(trainer=signn_trainer, args=None):
     if args is None:
         args = argument_parser().parse_args()
 
-    t = trainer(dataset_path=args.dataset_path, model_path=args.model_path,
-                epochs=args.epochs, steps_per_epoch=None,
-                batch_size=args.batch_size, shuffle=args.shuffle,
+    t = trainer(dataset_path=args.dataset_path, dataset_name=args.dataset_name,
+                model_path=args.model_path, epochs=args.epochs,
+                steps_per_epoch=None, batch_size=args.batch_size,
+                shuffle=args.shuffle,
                 shuffle_buffer_size=args.shuffle_buffer_size,
                 split_ratio=args.split_ratio,
                 validation_steps=None,
-                artifacts_dest=args.artifacts_dest)
+                artifacts_dest=args.artifacts_dest,
+                snr=[args.snr],
+                modulation=args.modulation)
 
     if args.train:
         t.train()

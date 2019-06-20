@@ -1,14 +1,16 @@
 import numpy as np
+import os
+import errno
 import h5py
 
 
-class deepsig_dataset_generator():
-    """A toolkit for parsing the Deepsig Inc. 2018.01 dataset"""
+class dataset_generator():
+    """A toolkit for parsing HDF5 datasets"""
 
-    def __init__(self, dataset_path, modulation=None, snr=None,
+    def __init__(self, dataset_path, dataset_name, modulation=None, snr=None,
                  split_ratio=[0.8, 0.1, 0.1]):
-        self.dataset_path = dataset_path
-        self.dataset = h5py.File(dataset_path+"/GOLD_XYZ_OSC.0001_1024.hdf5",
+        self.__init_dataset_path(dataset_path)
+        self.dataset = h5py.File(self.dataset_path+dataset_name,
                                  'r')
         self.__init_data()
         self.__init_modulations(modulation)
@@ -27,6 +29,12 @@ class deepsig_dataset_generator():
                                  self.total_samples_num/self.mods_num)
         self.test_samples = int(split_ratio[2] *
                                 self.total_samples_num/self.mods_num)
+
+    def __init_dataset_path(self, path):
+        if (not os.path.exists(path)):
+            raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT),
+                                    path)
+        self.dataset_path = os.path.join(path, '')
 
     def __init_data(self):
         self.data = self.dataset['X']
@@ -134,13 +142,10 @@ class deepsig_dataset_generator():
         if self.modarg is None:
             self.modarg = self.list_available_modulations()
 
-        # print("Total samples: ", self.total_samples_num)
-        # print("Training samples: ", self.train_samples*self.mods_num)
-        # print("Validation samples: ", self.valid_samples*self.mods_num)
-        # print("Testing samples: ", self.test_samples*self.mods_num)
-        # print('Loss:',
-        #       (self.train_samples+self.valid_samples+self.test_samples) -
-        #       self.total_samples_num/self.mods_num)
+        print("Total samples: ", self.total_samples_num)
+        print("Training samples: ", self.train_samples*self.mods_num)
+        print("Validation samples: ", self.valid_samples*self.mods_num)
+        print("Testing samples: ", self.test_samples*self.mods_num)
 
         mods = self.__get_index(self.modarg, self.mod_classes)
         for column in (self.snr[:] == self.snrarg).T:

@@ -62,21 +62,58 @@ class generate_satnogs_noise_dataset():
     def __expand_deepsig_dataset(self):
         copyfile(self.deepsig_path, self.destination + "deepsig.hdf5")
         fo = h5py.File(self.destination + "deepsig.hdf5", 'r+')
+        y = fo["Y"]
         del fo["Y"]
-        y = np.zeros((fo["X"].shape[0], 25))
-        y[:, 1] = 1
+        y = np.hstack([y, np.zeros((y.shape[0], 1))])
         fo.create_dataset("Y", data=y)
         fo.close()
 
     def __concat_datasets(self):
-        self.__expand_deepsig_dataset()
+        '''
+        Concatenate multiple files into a single virtual dataset
+        '''
+        # self.__expand_deepsig_dataset()
         fo = h5py.File(self.destination + "deepsig.hdf5", 'r+')
         fn = h5py.File(self.destination + "satnogs_noise.hdf5", 'r')
-        f = h5py.File(self.destination + "out.hdf5", 'w')
-        f.create_dataset("X", data=np.concatenate((fo["X"][0:106496,:,:], fn["X"])))
-        f.create_dataset("Y", data=np.concatenate((fo["Y"][0:106496,:], fn["Y"])))
-        f.create_dataset("X", data=np.concatenate((fo["Z"][:], fn["Z"])))
-        f.close()
+
+        x_layout = h5py.VirtualLayout(
+            shape=(fo["X"].shape[0]+fn["X"].shape[0],
+                   fn["X"].shape[1], fn["X"].shape[2]))
+
+        vsource = h5py.VirtualSource(self.destination + "deepsig.hdf5",
+                                     "X", shape=fo["X"].shape)
+        x_layout[0:fo["X"].shape[0]] = vsource
+        vsource = h5py.VirtualSource(self.destination + "satnogs_noise.hdf5",
+                                     "X", shape=fn["X"].shape)
+        x_layout[
+            fo["X"].shape[0]:fo["X"].shape[0]+fn["X"].shape[0]] = vsource
+
+        y_layout = h5py.VirtualLayout(
+            shape=(fo["Y"].shape[0]+fn["Y"].shape[0], fn["Y"].shape[1]))
+
+        vsource = h5py.VirtualSource(self.destination + "deepsig.hdf5",
+                                     "Y", shape=fo["Y"].shape)
+        y_layout[0:fo["Y"].shape[0]] = vsource
+        vsource = h5py.VirtualSource(self.destination + "satnogs_noise.hdf5",
+                                     "Y", shape=fn["Y"].shape)
+        y_layout[
+            fo["Y"].shape[0]:fo["Y"].shape[0]+fn["Y"].shape[0]] = vsource
+
+        z_layout = h5py.VirtualLayout(
+            shape=(fo["Z"].shape[0]+fn["Z"].shape[0], 1))
+
+        vsource = h5py.VirtualSource(self.destination + "deepsig.hdf5",
+                                     "Z", shape=fo["Z"].shape)
+        z_layout[0:fo["Z"].shape[0]] = vsource
+        vsource = h5py.VirtualSource(self.destination + "satnogs_noise.hdf5",
+                                     "Z", shape=fn["Z"].shape)
+        z_layout[
+            fo["Z"].shape[0]:fo["Z"].shape[0]+fn["Z"].shape[0]] = vsource
+
+        with h5py.File(self.destination+"VDS.h5", 'w', libver='latest') as f:
+            f.create_virtual_dataset("X", x_layout, fillvalue=0)
+            f.create_virtual_dataset("Y", y_layout, fillvalue=0)
+            f.create_virtual_dataset("Z", z_layout, fillvalue=0)
 
     def generate_dataset(self):
         files_cnt = self.__count_files()
@@ -88,7 +125,7 @@ class generate_satnogs_noise_dataset():
         x = np.zeros((self.rows_num, self.samples_per_row, 2), dtype="float32")
         y = np.zeros((self.rows_num, 25), dtype="uint8")
         y[:, -1] = 1
-        z = np.full((self.rows_num, 1), 20)
+        z = np.full((self.rows_num, 1), -20, dtype="float32")
         for fn in self.__iterate_source_dir():
             with open(fn, 'rb') as f:
                 # Skip some samples to avoid zeros
@@ -127,7 +164,7 @@ class generate_satnogs_noise_dataset():
         dataset.create_dataset('Y', data=y)
         dataset.create_dataset('Z', data=z)
         dataset.close()
-        # self.__concat_datasets()
+        self.__concat_datasets()
 
 
 def argument_parser():
