@@ -71,7 +71,7 @@ class SatnogsDownloader(argparse.Action):
         cropped_image.save(saved_location)
 
     '''
-    Function that transfers raw IQ SatNOGS observations that match specific 
+    Function that transfers raw IQ SatNOGS observations that match specific
     criteria from a remote to a local server.
     '''
     def transfer_raw_observations(self):
@@ -90,7 +90,6 @@ class SatnogsDownloader(argparse.Action):
         localpath = self.dest + '/iq_s16_'
         for s in self.vetted_status_list:
             self._set_vetted_status(s)
-            pbar = tqdm(total=int(self.obs_num))
             p = 1
             cnt = 0
             finished = False
@@ -115,7 +114,6 @@ class SatnogsDownloader(argparse.Action):
                 p = p + 1
             sftp.close()
             transport.close()
-            pbar.close()
 
     def download_waterfall_plot(self):
 

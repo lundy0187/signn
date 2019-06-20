@@ -15,9 +15,9 @@ class deepsig_dataset_generator():
         self.__init_snr()
         self.snr_num = 26
         self.samples_per_snr_mod = 4096
-        self.mod_classes = self.list_modulations()
         self.modarg = modulation
         self.snrarg = snr
+        self.mod_classes = self.list_available_modulations()
         self.total_samples_num = self.get_total_samples()
         # TODO: Add check for the split ratio list dimension
         self.split_ratio = split_ratio
@@ -36,7 +36,7 @@ class deepsig_dataset_generator():
         if modulation is not None:
             self.mods_num = len(modulation)
         else:
-            self.mods_num = len(self.list_modulations())
+            self.mods_num = len(self.list_available_modulations())
 
     def __init_snr(self):
         self.snr = self.dataset['Z']
@@ -44,7 +44,13 @@ class deepsig_dataset_generator():
     def __get_index(self, occur, l):
         return [l.index(idx.upper()) for idx in occur]
 
-    def list_modulations(self):
+    def list_selected_modulations(self):
+        if self.modarg is not None:
+            return [m.upper() for m in self.modarg]
+        else:
+            self.list_available_modulations()
+
+    def list_available_modulations(self):
         f = open(self.dataset_path+'/classes.txt', 'r')
         s = f.read()
         class_list = s.split("',\n '")
@@ -64,9 +70,6 @@ class deepsig_dataset_generator():
         else:
             return self.modulations[:, 0].size
 
-    def print_ref(self):
-        print(self.dataset.ref)
-
     '''
     Test dataset generator
     '''
@@ -76,7 +79,7 @@ class deepsig_dataset_generator():
             self.snrarg = [i for i in range(-20, 32, 2)]
 
         if self.modarg is None:
-            self.modarg = self.list_modulations()
+            self.modarg = self.list_available_modulations()
 
         mods = self.__get_index(self.modarg, self.mod_classes)
         for column in (self.snr[:] == self.snrarg).T:
@@ -103,7 +106,7 @@ class deepsig_dataset_generator():
             self.snrarg = [i for i in range(-20, 32, 2)]
 
         if self.modarg is None:
-            self.modarg = self.list_modulations()
+            self.modarg = self.list_available_modulations()
 
         mods = self.__get_index(self.modarg, self.mod_classes)
         for column in (self.snr[:] == self.snrarg).T:
@@ -129,7 +132,7 @@ class deepsig_dataset_generator():
             self.snrarg = [i for i in range(-20, 32, 2)]
 
         if self.modarg is None:
-            self.modarg = self.list_modulations()
+            self.modarg = self.list_available_modulations()
 
         # print("Total samples: ", self.total_samples_num)
         # print("Training samples: ", self.train_samples*self.mods_num)

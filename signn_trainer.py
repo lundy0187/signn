@@ -56,8 +56,10 @@ class signn_trainer():
             # Restrict TensorFlow to only use the first GPU
             try:
                 tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
-                logical_gpus = tf.config.experimental.list_logical_devices('GPU')
-                print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPU")
+                logical_gpus = tf.config.experimental.\
+                    list_logical_devices('GPU')
+                print(len(gpus), "Physical GPUs,", len(logical_gpus),
+                      "Logical GPU")
             except RuntimeError as e:
                 # Visible devices must be set before GPUs have been initialized
                 print(e)
@@ -122,7 +124,8 @@ class signn_trainer():
         # cm = cm[len(np.unique(truth_labels)):,
         #         0:len(np.unique(truth_labels))]
         self.plotter.plot_confusion_matrix(
-            cm, self.dataset_parser.list_modulations(), "conf_new.png")
+            cm, self.dataset_parser.list_available_modulations(),
+            "conf_new.png")
         # self.plotter.plot_training_validation_loss()
 
     def __log_confusion_matrix(self):
@@ -138,7 +141,8 @@ class signn_trainer():
         # cm = cm[len(np.unique(truth_labels)):,
         #         0:len(np.unique(truth_labels))]
         figure = self.plotter.plot_confusion_matrix(
-            cm, self.dataset_parser.list_modulations(), "conf_new.png")
+            cm, self.dataset_parser.list_selected_modulations(),
+            "conf_new.png")
         cm_image = self.plotter.plot_to_image(figure)
 
         with self.file_writer_cm.as_default():
