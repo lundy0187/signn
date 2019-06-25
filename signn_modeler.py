@@ -1,3 +1,20 @@
+"""
+   Copyright (C) 2019, Libre Space Foundation <https://libre.space/>
+
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
+
 import argparse
 import tensorflow.python.keras.models as models
 from tensorflow.python.keras.layers.core import (Reshape, Dense, Dropout,
@@ -7,19 +24,38 @@ from tensorflow.python.keras.layers.convolutional import (Conv2D,
 
 
 class signn_modeler():
+    """
+    A class that incorporates Tensorflow and Keras for the definition of the
+    model architecture.
 
+    Attributes
+    ----------
+    model : string
+        the enumeration that defines the selected architecture
+    input_shape : int
+        a list of integers that defines the input shape of the architecture
+    target_num : int
+        the number of targets for the selected architecture
+    destination: string
+        the full path to save the Keras model containing the file name
+        and extension
+    """
     def __init__(self, model, input_shape, target_num, destination):
         self.model_choice = model
         self.input_shape = input_shape
         self.target_num = target_num
-        self.model = self.get_model()
+        self.model = self.__get_model()
         self.destination = destination
 
-    def get_model(self):
+    def __get_model(self):
         if (self.model_choice == "deepsig"):
-            return self.get_deepsig_cnn()
+            return self.__get_deepsig_cnn()
 
-    def get_deepsig_cnn(self):
+    def __get_deepsig_cnn(self):
+        """
+        Return the model that describes the CNN architecture as described from
+        Deepsig Inc.
+        """
         dr = 0.5
         model = models.Sequential()
         model.add(Reshape(self.input_shape + [1],
@@ -42,9 +78,15 @@ class signn_modeler():
         return model
 
     def export_model(self):
+        """
+        Save the generated architecture.
+        """
         self.model.save(self.destination)
 
     def print_model_summary(self):
+        """
+        Print the summary of the generated architecture.
+        """
         self.model.summary()
 
 

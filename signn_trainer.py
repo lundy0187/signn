@@ -1,3 +1,20 @@
+"""
+   Copyright (C) 2019, Libre Space Foundation <https://libre.space/>
+
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
+
 import argparse
 import os
 import errno
@@ -15,7 +32,43 @@ from utils import plotter as plt
 
 
 class signn_trainer():
+    """
+    A class that incorporates Tensorflow and Keras for the training process.
 
+    Attributes
+    ----------
+    dataset_path : string
+        the path to the directory of the dataset
+    dataset_name : string
+        the name including the extension of the model file
+    model_path : string
+        the full path of the Keras model containing the file name and extension
+    epochs : int
+        the total number of full training passes over the entire dataset
+    steps_per_epoch : int
+        the total number of steps (batches of samples) before declaring one
+        epoch finished
+    batch_size : int
+        the number of samples per gradient update
+    shuffle : boolean
+        a switch to enable/disable the shuffling of dataset
+    shuffle_buffer_size : int
+        the size of buffer that will be filled for the shuffling of dataset
+    split_ratio : float
+        a triplet of floats that define the train/validation/test portions of
+        the dataset
+    validation_steps : int
+        the total number of steps (batches of samples) to draw before stopping
+        when performing validation at the end of every epoch
+    artifacts_dest : str
+        the path to the directory of training artifacts
+    snr: int
+        list of integers that defines a subset of samples with specific SNR
+        from the selected dataset
+    modulation: string
+        list of strings that defines a subset of samples with specific
+        modulation samples from the selected dataset
+    """
     def __init__(self, dataset_path, dataset_name, model_path, epochs,
                  steps_per_epoch, batch_size, shuffle, shuffle_buffer_size,
                  split_ratio, validation_steps, artifacts_dest, snr,
@@ -70,6 +123,10 @@ class signn_trainer():
         return [x.name for x in local_device_protos if x.device_type == 'GPU']
 
     def __init_dataset(self):
+        """
+        A method to initialize the train, validation and test datasets by\
+            by calling the appropriate generators respectively. 
+        """
         if (not os.path.exists(self.dataset_path)):
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT),
                                     self.dataset_path)
@@ -104,18 +161,19 @@ class signn_trainer():
         print("Batch sizes set on datasets.")
 
     def __init_model(self):
+        """
+        A method to load the Keras model from the predefined path.
+        """
         if (not os.path.isfile(self.model_path)):
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT),
                                     self.model_path)
         self.model = models.load_model(self.model_path)
 
-    def evaluate(self):
-        score = self.model.evaluate(self.test_dataset,
-                                    workers=16,
-                                    use_multiprocessing=True)
-        return score
-
     def predict(self):
+        """
+        A method that uses the trained model to make predictions over the test\
+            dataset.
+        """
         predictions = self.model.predict(self.test_dataset)
         truth_labels = np.array([])
         for i in self.test_dataset:
@@ -132,6 +190,10 @@ class signn_trainer():
         # self.plotter.plot_training_validation_loss()
 
     def __log_confusion_matrix(self):
+        """
+        A method to generate and log the confussion matrix from the test\
+            dataset predictions.
+        """
         print("Logging to Tensorboard")
         predictions = self.model.predict(self.test_dataset)
         truth_labels = np.array([])
@@ -152,9 +214,12 @@ class signn_trainer():
             tf.summary.image("Confusion Matrix", cm_image, step=1)
 
     def train(self):
+        """
+        A method that trains and saves a Keras model. 
+        """
         filepath = self.artifacts_dest+"/trained_model.h5"
         callback_list = [
-            clbck.ModelCheckpoint(filepath, monitor='val_loss', verbose=0,
+            clbck.ModelCheckpoint(filepath, monitor='val_loss', verbose=2,
                                   save_best_only=True, mode='auto'),
             clbck.EarlyStopping(monitor='val_loss', patience=5, verbose=0,
                                 mode='auto'),

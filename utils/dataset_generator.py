@@ -1,3 +1,20 @@
+"""
+   Copyright (C) 2019, Libre Space Foundation <https://libre.space/>
+
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
+
 import numpy as np
 import os
 import errno
@@ -5,7 +22,41 @@ import h5py
 
 
 class dataset_generator():
-    """A toolkit for parsing HDF5 datasets"""
+    """
+    A toolkit for parsing the signal dataset stored in HDF5 format.
+    The structure of the HDF5 dataset should follow the structure as described
+    above:
+
+    HDF5 Dataset Structure
+    -----------------------
+    Group '/'
+    Dataset 'X'
+        Size:  2x1024xN
+        Datatype:   FLOAT 32
+    Dataset 'Y'
+        Size:  25xN
+        MaxSize:  25xN
+        Datatype:   FLOAT 64
+    Dataset 'Z'
+        Size:  1xN
+        Datatype:   INT 64
+
+    Attributes
+    ----------
+    dataset_path : string
+        the path to the directory of the dataset
+    dataset_name : string
+        the name including the extension of the model file
+    modulation: string
+        list of strings that defines a subset of samples with specific
+        modulation samples from the selected dataset
+    snr: int
+        list of integers that defines a subset of samples with specific SNR
+        from the selected dataset
+    split_ratio : float
+        a triplet of floats that define the train/validation/test portions of
+        the dataset. Default: [0.8 0.1 0.1]
+    """
 
     def __init__(self, dataset_path, dataset_name, modulation=None, snr=None,
                  split_ratio=[0.8, 0.1, 0.1]):
@@ -37,16 +88,27 @@ class dataset_generator():
         self.dataset_path = os.path.join(path, '')
 
     def __init_data(self):
+        """
+        A method to initialize the samples dataset from the HDF5 file.
+        """
         self.data = self.dataset['X']
 
     def __init_modulations(self, modulation):
+        """
+        A method to initialize the targets dataset from the HDF5 file.
+        """
         self.modulations = self.dataset['Y']
+        # If modulation subset is given as argument count classes number
         if modulation is not None:
             self.mods_num = len(modulation)
+        # Else get default classes subset from local classes.txt file
         else:
             self.mods_num = len(self.list_available_modulations())
 
     def __init_snr(self):
+        """
+        A method to initialize the SNR dataset from the HDF5 file.
+        """
         self.snr = self.dataset['Z']
 
     def __get_index(self, occur, l):
@@ -59,6 +121,17 @@ class dataset_generator():
             self.list_available_modulations()
 
     def list_available_modulations(self):
+        """
+        The HDF5 dataset is followed by a txt file that defines the number and
+        names of the classes contained in the dataset.
+
+        TXT Structure
+        -------------------
+        classes = ['MOD1',
+                   'MOD2',
+                   ....
+                   'MODn']
+        """
         f = open(self.dataset_path+'/classes.txt', 'r')
         s = f.read()
         class_list = s.split("',\n '")
@@ -67,6 +140,10 @@ class dataset_generator():
         return class_list
 
     def get_total_samples(self):
+        """
+        Calculate the total number of samples from the initial dataset as
+        results based on the SNR and modulation subsets requested.
+        """
         if self.modarg is not None and self.snrarg is not None:
             return len(self.modarg)*len(self.snrarg)*self.samples_per_snr_mod
         elif self.modarg is None:
@@ -78,11 +155,10 @@ class dataset_generator():
         else:
             return self.modulations[:, 0].size
 
-    '''
-    Test dataset generator
-    '''
     def test_dataset_generator(self):
-
+        """
+        Generator for the test dataset.
+        """
         if self.snrarg is None:
             self.snrarg = [i for i in range(-20, 32, 2)]
 
@@ -105,11 +181,10 @@ class dataset_generator():
                            np.argmax(self.modulations[indx[:, i], :],
                                      axis=1)[j])
 
-    '''
-    Validation dataset generator
-    '''
     def validation_dataset_generator(self):
-
+        """
+        Generator for the validation dataset.
+        """
         if self.snrarg is None:
             self.snrarg = [i for i in range(-20, 32, 2)]
 
@@ -131,11 +206,10 @@ class dataset_generator():
                            np.argmax(self.modulations[indx[:, i], :],
                                      axis=1)[j])
 
-    '''
-    Train dataset generator
-    '''
     def train_dataset_generator(self):
-
+        """
+        Generator for the train dataset.
+        """
         if self.snrarg is None:
             self.snrarg = [i for i in range(-20, 32, 2)]
 
