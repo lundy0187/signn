@@ -267,7 +267,7 @@ def argument_parser():
                         type=int, default=100000,
                         help="Set shuffle buffer size.")
     parser.set_defaults(shuffle=True)
-    parser.add_argument("--split-ratio", default="0.8 0.2", nargs='+',
+    parser.add_argument("--split-ratio", default=[0.8, 0.1, 0.1], nargs='+',
                         dest="split_ratio", action="store", type=float,
                         help='Set the train/validation portions. \
                             (Default: %(default)s)')
@@ -302,7 +302,7 @@ def argument_parser():
 def main(trainer=signn_trainer, args=None):
     if args is None:
         args = argument_parser().parse_args()
-
+    print(args.split_ratio)
     t = trainer(dataset_path=args.dataset_path, dataset_name=args.dataset_name,
                 model_path=args.model_path, epochs=args.epochs,
                 steps_per_epoch=None, batch_size=args.batch_size,

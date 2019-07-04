@@ -18,10 +18,10 @@
 import argparse
 import tensorflow.python.keras.models as models
 import tensorflow.keras.regularizers as regularizers
-from tensorflow.python.keras.layers.core import (Reshape, Dense, Dropout,
-                                                 Activation, Flatten, Input,
-                                                 Add, BatchNormalization,
-                                                 AlphaDropout)
+from tensorflow.python.keras.layers import (Reshape, Dense, Dropout,
+                                            Activation, Flatten, Input,
+                                            Add, BatchNormalization,
+                                            AlphaDropout)
 from tensorflow.python.keras.layers.convolutional import (Conv2D,
                                                           ZeroPadding2D,
                                                           MaxPooling2D)
