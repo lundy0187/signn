@@ -13,9 +13,9 @@ Generate dataset with dynamic channel model across range of SNRs
 
 apply_channel = True
 
-nvecs_per_key = 2
+nvecs_per_key = 4096
 vec_length = 128
-snr_vals = range(-2, 4, 2)
+snr_vals = range(-20, 30, 2)
 global_modidx = 0
 dataset_x = np.empty((1, 2, vec_length), dtype=np.float32)
 dataset_y = np.empty((1, 11), dtype=np.float32)

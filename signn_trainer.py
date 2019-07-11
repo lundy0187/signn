@@ -24,7 +24,6 @@ import sklearn.metrics
 import tensorflow as tf
 import tensorflow.python.keras.models as models
 import tensorflow.python.keras.callbacks as clbck
-from tensorflow.python.client import device_lib
 from datetime import datetime
 
 from utils import dataset_generator as dg
@@ -57,6 +56,8 @@ class signn_trainer():
     split_ratio : float
         a triplet of floats that define the train/validation/test portions of
         the dataset
+    dataset_shape : int
+        a vector of ints that define the shape of the dataset
     validation_steps : int
         the total number of steps (batches of samples) to draw before stopping
         when performing validation at the end of every epoch
@@ -68,18 +69,23 @@ class signn_trainer():
     modulation: string
         list of strings that defines a subset of samples with specific
         modulation samples from the selected dataset
+    enable_gpu : boolean
+        a switch to enable/disable the GPU accelerator
     """
     def __init__(self, dataset_path, dataset_name, model_path, epochs,
                  steps_per_epoch, batch_size, shuffle, shuffle_buffer_size,
-                 split_ratio, validation_steps, artifacts_dest, snr,
-                 modulation):
+                 split_ratio, dataset_shape, validation_steps, artifacts_dest,
+                 snr, modulation, enable_gpu):
         self.batch_size = batch_size
         self.epochs = epochs
         self.steps_per_epoch = steps_per_epoch
         self.shuffle = shuffle
         self.shuffle_buffer_size = shuffle_buffer_size
-        self.split_ratio = split_ratio
+        self.split_ratio = split_ratio.copy()
+        self.dataset_shape = dataset_shape.copy()
         self.validation_steps = validation_steps
+        self.enable_gpu = enable_gpu
+        self.__configure_accelerators()
         self.dataset_path = dataset_path
         self.model_path = model_path
         self.dataset_parser = dg.dataset_generator(
@@ -102,25 +108,27 @@ class signn_trainer():
         self.file_writer_cm = tf.summary.create_file_writer(
             self.logdir + '/cm')
         self.plotter = plt.plotter(artifacts_dest)
-        self.get_available_gpus()
 
-    def get_available_gpus(self):
-        local_device_protos = device_lib.list_local_devices()
-
-        gpus = tf.config.experimental.list_physical_devices('GPU')
-        if gpus:
-            # Restrict TensorFlow to only use the first GPU
-            try:
-                tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
-                logical_gpus = tf.config.experimental.\
-                    list_logical_devices('GPU')
-                print(len(gpus), "Physical GPUs,", len(logical_gpus),
-                      "Logical GPU")
-            except RuntimeError as e:
-                # Visible devices must be set before GPUs have been initialized
-                print(e)
-
-        return [x.name for x in local_device_protos if x.device_type == 'GPU']
+    def __configure_accelerators(self):
+        if self.enable_gpu is not True:
+            os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+        else:
+            gpus = tf.config.experimental.list_physical_devices('GPU')
+            if gpus:
+                # Ask TensorFlow to only allocate 6GB of memory on first GPU
+                try:
+                    tf.config.experimental.set_virtual_device_configuration(
+                        gpus[0],
+                        [tf.config.experimental.VirtualDeviceConfiguration(
+                            memory_limit=6000)])
+                    logical_gpus = tf.config.experimental.list_logical_devices(
+                        'GPU')
+                    print(len(gpus), "Physical GPUs,", len(logical_gpus),
+                          "Logical GPUs")
+                except RuntimeError as e:
+                    # Virtual devices must be set before GPUs
+                    # have been initialized
+                    print(e)
 
     def __init_dataset(self):
         """
@@ -132,22 +140,18 @@ class signn_trainer():
                                     self.dataset_path)
         self.train_dataset = tf.data.Dataset.from_generator(
             lambda: self.dataset_parser.train_dataset_generator(),
-            (tf.float32, tf.uint8), ([2, 1024], []))
+            (tf.float32, tf.uint8), (self.dataset_shape, []))
         print("Train dataset initialization done.")
         self.validation_dataset = tf.data.Dataset.from_generator(
             lambda: self.dataset_parser.validation_dataset_generator(),
-            (tf.float32, tf.uint8), ([2, 1024], []))
+            (tf.float32, tf.uint8), (self.dataset_shape, []))
         print("Validation dataset initialization done.")
         self.test_dataset = tf.data.Dataset.from_generator(
             lambda: self.dataset_parser.test_dataset_generator(),
-            (tf.float32, tf.uint8), ([2, 1024], []))
+            (tf.float32, tf.uint8), (self.dataset_shape, []))
         print("Test dataset initialization done.")
         if self.shuffle:
             self.train_dataset = self.train_dataset.shuffle(
-                buffer_size=self.shuffle_buffer_size,
-                seed=int(round(time.time() * 1000)),
-                reshuffle_each_iteration=False)
-            self.validation_dataset = self.validation_dataset.shuffle(
                 buffer_size=self.shuffle_buffer_size,
                 seed=int(round(time.time() * 1000)),
                 reshuffle_each_iteration=False)
@@ -254,8 +258,8 @@ def argument_parser():
     parser.add_argument("-m --model-path", dest="model_path", action="store",
                         default="", help="Set model path.")
     parser.add_argument("--batch-size", dest="batch_size", type=int,
-                        default=10, help="Set batch size.")
-    parser.add_argument("--epochs", dest="epochs", type=int, default=10,
+                        default=100, help="Set batch size.")
+    parser.add_argument("--epochs", dest="epochs", type=int, default=30,
                         help="Set training epochs.")
     parser.add_argument("--steps-per-epoch", dest="steps_per_epoch", type=int,
                         default=None, help="Set training steps per epoch.")
@@ -264,12 +268,16 @@ def argument_parser():
     parser.add_argument('--no-shuffle', dest="shuffle", action='store_false',
                         help="Do not shuffle the dataset.")
     parser.add_argument("--shuffle-buffer-size", dest="shuffle_buffer_size",
-                        type=int, default=100000,
+                        type=int, default=10000,
                         help="Set shuffle buffer size.")
     parser.set_defaults(shuffle=True)
     parser.add_argument("--split-ratio", default=[0.8, 0.1, 0.1], nargs='+',
                         dest="split_ratio", action="store", type=float,
                         help='Set the train/validation portions. \
+                            (Default: %(default)s)')
+    parser.add_argument("--dataset-shape", default=[2, 1024], nargs='+',
+                        dest="dataset_shape", action="store", type=int,
+                        help='Set the dataset shape. \
                             (Default: %(default)s)')
     parser.add_argument("--validation-steps", dest="validation_steps",
                         type=int, default=None,
@@ -296,23 +304,30 @@ def argument_parser():
                         dest="modulation", action="store",
                         help='Set the modulation samples to extract from dataset. \
                             (Default: %(default)s)')
+    parser.add_argument('--gpu', dest="enable_gpu", action='store_true',
+                        help="Enable GPU.")
+    parser.add_argument('--cpu', dest="enable_gpu", action='store_false',
+                        help="Use CPU only.")
+    parser.set_defaults(enable_gpu=True)
     return parser
 
 
 def main(trainer=signn_trainer, args=None):
     if args is None:
         args = argument_parser().parse_args()
-    print(args.split_ratio)
+
     t = trainer(dataset_path=args.dataset_path, dataset_name=args.dataset_name,
                 model_path=args.model_path, epochs=args.epochs,
                 steps_per_epoch=None, batch_size=args.batch_size,
                 shuffle=args.shuffle,
                 shuffle_buffer_size=args.shuffle_buffer_size,
                 split_ratio=args.split_ratio,
+                dataset_shape=args.dataset_shape,
                 validation_steps=None,
                 artifacts_dest=args.artifacts_dest,
                 snr=[args.snr],
-                modulation=args.modulation)
+                modulation=args.modulation,
+                enable_gpu=args.enable_gpu)
 
     if args.train:
         t.train()
