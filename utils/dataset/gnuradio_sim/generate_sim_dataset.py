@@ -17,12 +17,19 @@ nvecs_per_key = 4096
 vec_length = 128
 snr_vals = range(-20, 30, 2)
 global_modidx = 0
-dataset_x = np.empty((1, 2, vec_length), dtype=np.float32)
-dataset_y = np.empty((1, 11), dtype=np.float32)
-dataset_z = np.empty((1), dtype=np.float32)
+
+# count modulations  
+mods_num = len(transmitters["continuous"]) + len(transmitters["discrete"]) + \
+           len(transmitters["noise"])
+
+dataset_x = np.zeros((mods_num * len(snr_vals) * nvecs_per_key, vec_length, 2), dtype=np.float32)
+dataset_y = np.zeros((mods_num * len(snr_vals) * nvecs_per_key, mods_num), dtype=np.int64)
+dataset_z = np.zeros((mods_num * len(snr_vals) * nvecs_per_key, 1), dtype=np.int64)
 
 f = open("classes.txt", "w")
 f.write("classes = [")
+
+gindx = 0
 
 for alphabet_type in transmitters.keys():
     for i, mod_type in enumerate(transmitters[alphabet_type]):
@@ -36,11 +43,6 @@ for alphabet_type in transmitters.keys():
             f.write("'" + mod_type.modname + "'")
         print(i, mod_type)
         for snr_idx, snr in enumerate(snr_vals):
-            x = np.zeros(
-                (nvecs_per_key, 2, vec_length), dtype=np.float32)
-            y = np.zeros(
-                (nvecs_per_key, 11), dtype=np.float32)
-            z = np.zeros(nvecs_per_key, dtype=np.float32)
             # moar vectors!
             modvec_indx = 0
             insufficient_modsnr_vectors = True
@@ -57,14 +59,14 @@ for alphabet_type in transmitters.keys():
                 mags = [1, 0.8, 0.3]
                 ntaps = 8
                 noise_amp = 10**(-snr/10.0)
-                chan = channels.dynamic_channel_model(
-                    200e3, 0.01, 50, .01, 0.5e3, 8, fD, True, 4, delays, mags,
-                    ntaps, noise_amp, 0x1337)
 
                 snk = blocks.vector_sink_c()
 
                 tb = gr.top_block()
                 if apply_channel:
+                    chan = channels.dynamic_channel_model(
+                        200e3, 0.01, 50, .01, 0.5e3, 8, fD, True, 4, delays,
+                        mags, ntaps, noise_amp, 0x1337)
                     if alphabet_type == "noise":
                         tb.connect(src, chan, snk)
                     else:
@@ -77,6 +79,7 @@ for alphabet_type in transmitters.keys():
                 tb.run()
 
                 raw_output_vector = np.array(snk.data(), dtype=np.complex64)
+
                 # start the sampler some random time after channel model
                 # transients (arbitrary values here)
                 sampler_indx = random.randint(50, 500)
@@ -87,28 +90,29 @@ for alphabet_type in transmitters.keys():
                     # Normalize the energy in this vector to be 1
                     energy = np.sum((np.abs(sampled_vector)))
                     sampled_vector = sampled_vector / energy
-                    x[modvec_indx, 0, :] = np.real(sampled_vector)
-                    x[modvec_indx, 1, :] = np.imag(sampled_vector)
-                    y[modvec_indx, :] = np.zeros((1, 11))
-                    y[modvec_indx, i] = 1
-                    z[modvec_indx] = snr
+                    dataset_x[gindx, :, 0] = np.real(sampled_vector)
+                    dataset_x[gindx, :, 1] = np.imag(sampled_vector)
+                    dataset_y[gindx, :] = np.zeros((1, 11))
+                    dataset_y[gindx, i] = 1
+                    dataset_z[gindx, 0] = snr
                     # bound the upper end very high so it's likely we get
                     # multiple passes through independent channels
-                    sampler_indx += random.randint(vec_length,
-                                                   round(len(raw_output_vector)
-                                                         * 0.05))
-                    modvec_indx += 1
 
-                dataset_x = np.append(dataset_x, x, axis=0)
-                dataset_y = np.append(dataset_y, y, axis=0)
-                dataset_z = np.append(dataset_z, z, axis=0)
+                    if round(len(raw_output_vector) * 0.05) < vec_length:
+                        sampler_indx += vec_length
+                    else:
+                        sampler_indx += random.randint(vec_length,
+                            round(len(raw_output_vector) * 0.05))
+                    modvec_indx += 1
+                    gindx += 1
+
+                    # if ((modvec_indx % 500) == 0):
+                    #     print("example: " + str(modvec_indx))
+
                 if modvec_indx == nvecs_per_key:
                     insufficient_modsnr_vectors = False
 
-f.write("]")
-dataset_x = np.delete(dataset_x, (0), axis=0)
-dataset_y = np.delete(dataset_y, (0), axis=0)
-dataset_z = np.delete(dataset_z, (0), axis=0)
+f.write("]\n")
 dataset = h5py.File('SIGNN_2019_01.hdf5', 'w')
 dataset.create_dataset('X', data=dataset_x)
 dataset.create_dataset('Y', data=dataset_y)

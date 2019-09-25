@@ -133,9 +133,9 @@ class dataset_generator():
                    'MODn']
         """
         f = open(self.dataset_path+'/classes.txt', 'r')
-        s = f.read()
-        class_list = s.split("',\n '")
-        class_list[0] = class_list[0].split("classes = ['")[1]
+        s = f.read().replace(" ", "")
+        class_list = s.split("',\n'")
+        class_list[0] = class_list[0].split("classes=['")[1]
         class_list[-1] = class_list[-1].split("']\n")[0]
         return class_list
 

@@ -100,7 +100,7 @@ class transmitter_qam64(transmitter_mapper):
 
     def __init__(self):
         modtype = digital.qam.qam_mod(
-            constellation_points=16,
+            constellation_points=64,
             mod_code="gray",
             differential=True,
             samples_per_symbol=2,
