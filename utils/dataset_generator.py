@@ -1,18 +1,8 @@
 """
-   Copyright (C) 2019, Libre Space Foundation <https://libre.space/>
-
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+   Copyright (C) 2020, Foundation for Research and Technology - Hellas
+   This software is released under the license detailed
+   in the file, LICENSE, which is located in the top-level
+   directory structure 
 """
 
 import numpy as np
@@ -58,7 +48,10 @@ class dataset_generator():
         the dataset. Default: [0.8 0.1 0.1]
     """
 
-    def __init__(self, dataset_path, dataset_name, modulation=None, snr=None,
+    def __init__(self, dataset_path, dataset_name,
+                 dataset_percent=1,
+                 data_transform='cartesian',
+                 modulation=None, snr=None,
                  split_ratio=[0.8, 0.1, 0.1]):
         self.__init_dataset_path(dataset_path)
         self.dataset = h5py.File(self.dataset_path+dataset_name,
@@ -66,20 +59,19 @@ class dataset_generator():
         self.__init_data()
         self.__init_modulations(modulation)
         self.__init_snr()
-        self.snr_num = 26
-        self.samples_per_snr_mod = 4096
+        self.snr_num = len(np.unique(self.snr))
+        self.samples_per_snr_mod = self = \
+            int(np.sum(self.modulations, axis=0)[0] / self.snr_num)
+        self.dpercarg = dataset_percent
         self.modarg = modulation
         self.snrarg = snr
         self.mod_classes = self.list_available_modulations()
         self.total_samples_num = self.get_total_samples()
         # TODO: Add check for the split ratio list dimension
         self.split_ratio = split_ratio
-        self.train_samples = int(split_ratio[0] *
-                                 self.total_samples_num/self.mods_num)
-        self.valid_samples = int(split_ratio[1] *
-                                 self.total_samples_num/self.mods_num)
-        self.test_samples = int(split_ratio[2] *
-                                self.total_samples_num/self.mods_num)
+        self.train_samples = int(split_ratio[0] * self.samples_per_snr_mod)
+        self.valid_samples = int(split_ratio[1] * self.samples_per_snr_mod)
+        self.test_samples = int(split_ratio[2] * self.samples_per_snr_mod)
 
     def __init_dataset_path(self, path):
         if (not os.path.exists(path)):
@@ -155,6 +147,17 @@ class dataset_generator():
         else:
             return self.modulations[:, 0].size
 
+    def transform_example(self, x, transform):
+        if transform == 'cartesian':
+            return x
+        elif transform == 'polar':
+            y = np.zeros(x.shape, dtype=np.float32)
+            y[0, :] = np.sqrt(x[0, :]**2 + x[1, :]**2)
+            y[1, :] = np.arctan2(x[1, :], x[0, :])
+            return y
+        else:
+            raise ValueError('Invalid data transformation')
+
     def test_dataset_generator(self):
         """
         Generator for the test dataset.
@@ -174,10 +177,13 @@ class dataset_generator():
 
             for i in range(
                 self.train_samples+self.valid_samples,
-                    self.train_samples+self.valid_samples+self.test_samples):
+                    self.train_samples+self.valid_samples +
+                    int(self.test_samples * self.dpercarg)):
                 # Pop every modulation sample
                 for j in range(0, indx.shape[0]):
-                    yield (self.data[indx[j, i], :, :].transpose(),
+                    cur_example = self.data[indx[j, i], :, :].transpose()
+                    yield (sself.transform_example(cur_example,
+                                                   self.data_transform),
                            np.argmax(self.modulations[indx[:, i], :],
                                      axis=1)[j])
 
@@ -199,10 +205,13 @@ class dataset_generator():
             indx = indx.reshape(len(mods), self.samples_per_snr_mod)
 
             for i in range(self.train_samples,
-                           self.train_samples+self.valid_samples):
+                           self.train_samples +
+                           int(self.valid_samples * self.dpercarg)):
                 # Pop every modulation sample
                 for j in range(0, indx.shape[0]):
-                    yield (self.data[indx[j, i], :, :].transpose(),
+                    cur_example = self.data[indx[j, i], :, :].transpose()
+                    yield (self.transform_example(cur_example,
+                                                  self.data_transform),
                            np.argmax(self.modulations[indx[:, i], :],
                                      axis=1)[j])
 
@@ -216,11 +225,6 @@ class dataset_generator():
         if self.modarg is None:
             self.modarg = self.list_available_modulations()
 
-        print("Total samples: ", self.total_samples_num)
-        print("Training samples: ", self.train_samples*self.mods_num)
-        print("Validation samples: ", self.valid_samples*self.mods_num)
-        print("Testing samples: ", self.test_samples*self.mods_num)
-
         mods = self.__get_index(self.modarg, self.mod_classes)
         for column in (self.snr[:] == self.snrarg).T:
             q = np.where(column &
@@ -228,9 +232,11 @@ class dataset_generator():
             indx = (np.array(q).reshape(-1, 1))
             indx = indx.reshape(len(mods), self.samples_per_snr_mod)
 
-            for i in range(0, self.train_samples):
+            for i in range(0, int(self.train_samples*self.dpercarg)):
                 # Pop every modulation sample
                 for j in range(0, indx.shape[0]):
-                    yield (self.data[indx[j, i], :, :].transpose(),
+                    cur_example = self.data[indx[j, i], :, :].transpose()
+                    yield (self.transform_example(cur_example,
+                                                  self.data_transform),
                            np.argmax(self.modulations[indx[:, i], :],
                                      axis=1)[j])

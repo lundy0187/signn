@@ -1,18 +1,8 @@
 """
-   Copyright (C) 2019, Libre Space Foundation <https://libre.space/>
-
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+   Copyright (C) 2020, Foundation for Research and Technology - Hellas
+   This software is released under the license detailed
+   in the file, LICENSE, which is located in the top-level
+   directory structure 
 """
 
 import argparse
@@ -63,6 +53,11 @@ class signn_trainer():
         when performing validation at the end of every epoch
     artifacts_dest : str
         the path to the directory of training artifacts
+    dataset_percent : float
+        percentage of total dataset to use (subset of each SNR and modulation
+        selected)
+    data_transform : str
+        type of transformation to apply to dataset examples 
     snr: int
         list of integers that defines a subset of samples with specific SNR
         from the selected dataset
@@ -75,7 +70,7 @@ class signn_trainer():
     def __init__(self, dataset_path, dataset_name, model_path, epochs,
                  steps_per_epoch, batch_size, shuffle, shuffle_buffer_size,
                  split_ratio, dataset_shape, validation_steps, artifacts_dest,
-                 snr, modulation, enable_gpu):
+                 dataset_percent, data_transform, snr, modulation, enable_gpu):
         self.batch_size = batch_size
         self.epochs = epochs
         self.steps_per_epoch = steps_per_epoch
@@ -91,6 +86,8 @@ class signn_trainer():
         self.dataset_parser = dg.dataset_generator(
             self.dataset_path,
             dataset_name,
+            dataset_percent=dataset_percent,
+            data_transform=data_transform,
             snr=snr,
             modulation=modulation,
             split_ratio=split_ratio)
@@ -284,7 +281,7 @@ def argument_parser():
                         help="Set the number of validation steps.")
     parser.add_argument("--artifacts-directory", dest="artifacts_dest",
                         default="artifacts",
-                        help="Set the destiantion folder of the training\
+                        help="Set the destination folder of the training\
                             artifacts.")
     parser.add_argument('--train', dest="train", action='store_true',
                         help="Enable training.")
@@ -296,6 +293,12 @@ def argument_parser():
     parser.add_argument('--no-test', dest="test", action='store_false',
                         help="Disable testing.")
     parser.set_defaults(test=False)
+    parser.add_argument("--dataset-percent", dest='dataset_percent',
+                        type=float, default=1,
+                        help="Define percentage of original dataset to use")
+    parser.add_argument("--data-transform", dest='data_transform',
+                        default='cartesian',
+                        help="Apply transform to dataset examples.")
     parser.add_argument("--snr", default="-20", nargs='+',
                         dest="snr", action="store", type=int,
                         help='Set the SNR samples to extract from dataset. \
@@ -325,6 +328,8 @@ def main(trainer=signn_trainer, args=None):
                 dataset_shape=args.dataset_shape,
                 validation_steps=None,
                 artifacts_dest=args.artifacts_dest,
+                dataset_percent=args.dataset_percent,
+                data_transform=args.data_transform,
                 snr=[args.snr],
                 modulation=args.modulation,
                 enable_gpu=args.enable_gpu)

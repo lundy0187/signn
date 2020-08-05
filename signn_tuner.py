@@ -1,3 +1,10 @@
+"""
+   Copyright (C) 2020, Foundation for Research and Technology - Hellas
+   This software is released under the license detailed
+   in the file, LICENSE, which is located in the top-level
+   directory structure 
+"""
+
 import argparse
 import os
 import errno
@@ -53,6 +60,11 @@ class signn_tuner():
         the dataset
     dataset_shape : int
         a vector of ints that define the shape of the dataset
+    dataset_percent : float
+        percentage of total dataset to use (subset of each SNR and modulation
+        selected)
+    data_transform : str
+        type of transformation to apply to dataset examples
     do_testing : bolean
         a switch to enable/disable testing on top best models 
     snr: int
@@ -71,6 +83,7 @@ class signn_tuner():
                  tuner_type, max_trials,
                  best_models_num, destination,
                  split_ratio, dataset_shape,
+                 dataset_percent, data_transform,
                  do_testing,
                  snr, modulation, enable_gpu):
         self.target_num = target_num
@@ -94,17 +107,12 @@ class signn_tuner():
         self.dataset_parser = dg.dataset_generator(
             self.dataset_path,
             dataset_name,
+            dataset_percent=dataset_percent,
+            data_transform=data_transform,
             snr=snr,
             modulation=modulation,
             split_ratio=split_ratio)
 
-        self.train_samples_num = int((self.split_ratio[0] *
-                                      self.dataset_parser.get_total_samples()))
-        self.validation_samples_num = int((self.split_ratio[1] *
-                                           self.dataset_parser
-                                           .get_total_samples()))
-        self.test_samples_num = int((self.split_ratio[2] *
-                                     self.dataset_parser.get_total_samples()))
         self.__init_dataset()
         self.__init_model()
         self.__init_tuner()
@@ -318,6 +326,12 @@ def argument_parser():
                         dest="dataset_shape", action="store", type=int,
                         help='Set the dataset shape. \
                             (Default: %(default)s)')
+    parser.add_argument("--dataset-percent", dest='dataset_percent',
+                        type=float, default=1,
+                        help="Define percentage of original dataset to use")
+    parser.add_argument("--data-transform", dest='data_transform',
+                        default='cartesian',
+                        help="Apply transform to dataset examples.")
     parser.add_argument("--snr", default="-20", nargs='+',
                         dest="snr", action="store", type=int,
                         help='Set the SNR samples to extract from dataset. \
@@ -347,6 +361,8 @@ def main(tuner=signn_tuner, args=None):
               best_models_num=args.best_models_num,
               destination=args.destination, do_testing=args.do_testing,
               split_ratio=args.split_ratio, dataset_shape=args.dataset_shape,
+              dataset_percent=args.dataset_percent,
+              data_transform=args.data_transform,
               snr=[args.snr],
               modulation=args.modulation,
               enable_gpu=args.enable_gpu)

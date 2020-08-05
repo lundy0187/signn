@@ -1,17 +1,16 @@
 ## signn: Signal Detection and Classification using Neural Networks
 
-## Dataset
-To be updated.
 
 ## Requirements
 The requirements are listed in the *requirements.txt* located in the root directory of this project.
 
-* Tensorflow [2.0.0a0]
+* Tensorflow [2.0.0]
 * Keras [2.2.4]
 * sklearn
 * numpy [1.16.2]
 * matplotlib [3.1.0]
 * h5py [2.9.0]
+* keras-tuner [1.0.0]
 
 In addition, for running some auxilliary scripts some extra dependencies should be met:
 
@@ -78,20 +77,17 @@ $ python3 signn_trainer.py --help
 $ tensorboard --logdir artifacts/plots
 ~~~~
 
-The navigate to http://0.0.0.0:6006
-
-## Documentation
-
-For more information about the signn project visit the Wiki pages.
-
-## License
-The *signn* project is implemented in the scope of [SDR Makerspace](https://sdrmaker.space/), an initiative of the [European Space Agency](https://esa.int) and [Libre Space Foundation](https://libre.space). 
+Then navigate to http://0.0.0.0:6006
 
 
-&copy; 2019 [Libre Space Foundation](http://librespacefoundation.org) under the [GPLv3](LICENSE).
+##### 5. Tune Keras model hyperparameters by using keras-tuner library.
 
-![sdrmakerspace](https://gitlab.com/librespacefoundation/sdrmakerspace/iqzip/wikis/uploads/5b652716f9ae39c444009ccdb8e337ba/sdrmakerspace.png)
-![esa](https://gitlab.com/librespacefoundation/sdrmakerspace/iqzip/wikis/uploads/a51802d6b007ce52f67dc6ad58fb022b/esa.gif)
-![lsf](https://gitlab.com/librespacefoundation/sdrmakerspace/iqzip/wikis/uploads/55eeb8135a2c35fae9357f1486f23258/lsf.png)
+~~~~
+$ python3 signn_tuner.py -p utils/dataset/gnuradio_sim -d SIGNN_2019_01.hdf5 --dataset-shape 2 1024
+~~~~
 
-## References
+For more information, please use the help argument:
+
+~~~~
+$ python3 signn_tuner.py --help
+~~~~

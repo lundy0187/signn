@@ -1,3 +1,10 @@
+"""
+   Copyright (C) 2020, Foundation for Research and Technology - Hellas
+   This software is released under the license detailed
+   in the file, LICENSE, which is located in the top-level
+   directory structure 
+"""
+
 import tensorflow.python.keras.models as models
 from tensorflow.python.keras.layers import (Reshape, Dense, Dropout,
                                             Flatten)
