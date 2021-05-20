@@ -26,7 +26,7 @@ class dataset_generator():
     Dataset 'Y'
         Size:  25xN
         MaxSize:  25xN
-        Datatype:   FLOAT 64
+        Datatype:   INT 64
     Dataset 'Z'
         Size:  1xN
         Datatype:   INT 64
@@ -60,7 +60,7 @@ class dataset_generator():
         self.__init_modulations(modulation)
         self.__init_snr()
         self.snr_num = len(np.unique(self.snr))
-        self.samples_per_snr_mod = self = \
+        self.samples_per_snr_mod = \
             int(np.sum(self.modulations, axis=0)[0] / self.snr_num)
         self.dpercarg = dataset_percent
         self.modarg = modulation
@@ -182,8 +182,8 @@ class dataset_generator():
                 # Pop every modulation sample
                 for j in range(0, indx.shape[0]):
                     cur_example = self.data[indx[j, i], :, :].transpose()
-                    yield (sself.transform_example(cur_example,
-                                                   self.data_transform),
+                    yield (self.transform_example(cur_example,
+                                                  self.data_transform),
                            np.argmax(self.modulations[indx[:, i], :],
                                      axis=1)[j])
 
