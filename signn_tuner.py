@@ -19,7 +19,7 @@ from utils import dataset_generator as dg
 from utils import plotter as plt
 
 from kerastuner.tuners import (RandomSearch, BayesianOptimization)
-import tensorflow.python.keras.models as models
+import tensorflow.keras.models as models
 
 import hypermodels
 
@@ -322,7 +322,7 @@ def argument_parser():
     parser.add_argument('--no-test', dest="do_testing", action='store_false',
                         help="Disable testing.")
     parser.set_defaults(do_testing=False)
-    parser.add_argument("--dataset-shape", default=[2, 1024], nargs='+',
+    parser.add_argument("--dataset-shape", default=[2, 128], nargs='+',
                         dest="dataset_shape", action="store", type=int,
                         help='Set the dataset shape. \
                             (Default: %(default)s)')

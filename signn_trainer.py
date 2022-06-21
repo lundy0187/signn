@@ -12,8 +12,8 @@ import time
 import numpy as np
 import sklearn.metrics
 import tensorflow as tf
-import tensorflow.python.keras.models as models
-import tensorflow.python.keras.callbacks as clbck
+import tensorflow.keras.models as models
+import tensorflow.keras.callbacks as clbck
 from datetime import datetime
 
 from utils import dataset_generator as dg
@@ -272,7 +272,7 @@ def argument_parser():
                         dest="split_ratio", action="store", type=float,
                         help='Set the train/validation portions. \
                             (Default: %(default)s)')
-    parser.add_argument("--dataset-shape", default=[2, 1024], nargs='+',
+    parser.add_argument("--dataset-shape", default=[2, 128], nargs='+',
                         dest="dataset_shape", action="store", type=int,
                         help='Set the dataset shape. \
                             (Default: %(default)s)')

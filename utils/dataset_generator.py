@@ -72,6 +72,7 @@ class dataset_generator():
         self.train_samples = int(split_ratio[0] * self.samples_per_snr_mod)
         self.valid_samples = int(split_ratio[1] * self.samples_per_snr_mod)
         self.test_samples = int(split_ratio[2] * self.samples_per_snr_mod)
+        self.data_transform = data_transform
 
     def __init_dataset_path(self, path):
         if (not os.path.exists(path)):

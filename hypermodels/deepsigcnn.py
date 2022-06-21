@@ -5,12 +5,12 @@
    directory structure 
 """
 
-import tensorflow.python.keras.models as models
-from tensorflow.python.keras.layers import (Reshape, Dense, Dropout,
+import tensorflow.keras.models as models
+from tensorflow.keras.layers import (Reshape, Dense, Dropout,
                                             Flatten)
 from tensorflow.python.keras.layers.convolutional import (Conv2D,
                                                           ZeroPadding2D)
-from tensorflow.python.keras.optimizers import Adam
+from tensorflow.keras.optimizers import Adam
 
 from kerastuner import HyperModel
 

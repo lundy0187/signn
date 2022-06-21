@@ -4,9 +4,9 @@
    in the file, LICENSE, which is located in the top-level
    directory structure 
 """
-
+import tensorflow
 import argparse
-import tensorflow.python.keras.models as models
+import tensorflow.keras.models as models
 import tensorflow.keras.regularizers as regularizers
 from tensorflow.python.keras.layers import (Reshape, Dense, Dropout,
                                             Activation, Flatten, Input,

@@ -5,8 +5,8 @@
    directory structure 
 """
 
-import tensorflow.python.keras.models as models
-from tensorflow.python.keras.layers import (Input, Reshape, Dense,
+import tensorflow.keras.models as models
+from tensorflow.keras.layers import (Input, Reshape, Dense,
                                             Flatten, BatchNormalization, Add,
                                             Activation, AlphaDropout)
 from tensorflow.python.keras.layers.convolutional import (Conv2D,
@@ -14,7 +14,7 @@ from tensorflow.python.keras.layers.convolutional import (Conv2D,
                                                           MaxPooling2D)
 from tensorflow.keras.regularizers import l2 as l2_reg
 
-from tensorflow.python.keras.optimizers import Adam
+from tensorflow.keras.optimizers import Adam
 
 from kerastuner import HyperModel
 
