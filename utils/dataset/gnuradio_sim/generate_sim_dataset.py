@@ -14,7 +14,7 @@ Generate dataset with dynamic channel model across range of SNRs
 apply_channel = True
 
 nvecs_per_key = 4096
-vec_length = 128
+vec_length = 4096
 snr_vals = range(-20, 30, 2)
 global_modidx = 0
 
@@ -32,7 +32,9 @@ f.write("classes = [")
 gindx = 0
 
 for alphabet_type in transmitters.keys():
+    print("alphabet_type: " + str(alphabet_type))
     for i, mod_type in enumerate(transmitters[alphabet_type]):
+        print("i, mod_type: " + str(i) + ", " + str(mod_type))
         if alphabet_type == "continuous" or alphabet_type == "discrete":
             if alphabet_type == "continuous":
                 i = len(transmitters["discrete"]) + i
@@ -43,6 +45,7 @@ for alphabet_type in transmitters.keys():
             f.write("'" + mod_type.modname + "'")
         print(i, mod_type)
         for snr_idx, snr in enumerate(snr_vals):
+            print("snr_idx, snr: " + str(snr_idx) + ", " + str(snr))
             # moar vectors!
             modvec_indx = 0
             insufficient_modsnr_vectors = True
