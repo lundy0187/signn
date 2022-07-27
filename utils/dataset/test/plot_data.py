@@ -1,9 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import h5py
+import os
 
-folName = './utils/dataset/gnuradio_sim/'
-fileName = 'SIGNN_2019_01_1024.hdf5'
+folTest = os.getcwd() + '/utils/dataset/gnuradio_sim/'
+fileTest = 'SIGNN_2019_01_1024.hdf5'
 
 #mod dictionary
 modDict = {
@@ -20,7 +21,7 @@ modDict = {
     'NOISE': 11
     }
 
-def parse_dataset(modName, snrName):
+def parse_dataset(modName, snrName, folName, fileName):
     # import file
     dataset = h5py.File(folName + fileName, 'r')
     # import datasets
@@ -71,8 +72,8 @@ if __name__ == "__main__":
     mod2 = 'AM-DSB'
     snr = 10
     # extract datasets
-    wbfmSet = parse_dataset(mod1, snr)
-    amdsbSet = parse_dataset(mod2, snr)
+    wbfmSet = parse_dataset(mod1, snr, folTest, fileTest)
+    amdsbSet = parse_dataset(mod2, snr, folTest, fileTest)
     # extract example vectors for analysis
     wbfmSig = wbfmSet[np.random.randint(wbfmSet.shape[0]), :]
     amdsbSig = amdsbSet[np.random.randint(amdsbSet.shape[0]), :]
