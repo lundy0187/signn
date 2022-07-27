@@ -53,7 +53,7 @@ If you desire to skip the data generation step, then you simply replace the outp
 ##### 2. Generate the Keras model used for training:
 
 ~~~~
-$ python3 signn_modeler.py -i 2 128 -s model.h5
+$ python3 signn_modeler.py -i 2 1024 -s model.h5
 ~~~~
 
 For more information, please use the help argument:
@@ -86,7 +86,7 @@ Then navigate to http://0.0.0.0:6006
 ##### 5. Tune Keras model hyperparameters by using keras-tuner library.
 
 ~~~~
-$ python3 signn_tuner.py -p utils/dataset/gnuradio_sim -d SIGNN_2019_01.hdf5 --dataset-shape 2 128 -s artifacts --test
+$ python3 signn_tuner.py -p utils/dataset/gnuradio_sim -d SIGNN_2019_01.hdf5 --dataset-shape 2 1024 -s artifacts --test
 ~~~~
 
 For more information, please use the help argument:
