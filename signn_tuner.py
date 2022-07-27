@@ -120,6 +120,16 @@ class signn_tuner():
         if do_testing:
             self.__init_plotter()
 
+    def __set_gpu_and_backend(self, gpu1, gpu2, backend="tensorflow"):
+        os.environ["KERAS_BACKEND"] = backend
+        # initialize gpu list between [gpu1, gpu2]
+        gpuStr=''
+        for i in np.arange(gpu1, gpu2):
+            gpuStr += str(i) + ','
+        gpuStr = gpuStr[0:-1]
+        # set visible CUDA devices
+        os.environ["CUDA_VISIBLE_DEVICES"] = gpuStr
+
     def __configure_accelerators(self):
         """
         A method to configure GPU accelerators.
@@ -127,19 +137,7 @@ class signn_tuner():
         if self.enable_gpu is not True:
             os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
         else:
-            gpus = tf.config.experimental.list_physical_devices('GPU')
-            if gpus:
-                try:
-                    tf.config.experimental.set_virtual_device_configuration(
-                        gpus[0],
-                        [tf.config.experimental.VirtualDeviceConfiguration(
-                            memory_limit=6000)])
-                    logical_gpus = tf.config.experimental.list_logical_devices(
-                        'GPU')
-                    print(len(gpus), "Physical GPUs,", len(logical_gpus),
-                          "Logical GPUs")
-                except RuntimeError as e:
-                    print(e)
+            self.__set_gpu_and_backend(0,4)
 
     def __init_dataset(self):
         """

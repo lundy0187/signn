@@ -65,7 +65,7 @@ $ python3 signn_modeler.py --help
 ##### 3. Train the Keras model exported with the previous command:
 
 ~~~~
-$ python3 signn_trainer.py -p utils/dataset/gnuradio_sim -d SIGNN_2019_01.hdf5 -m model.h5 --train --dataset-shape 2 128
+$ python3 signn_trainer.py -p utils/dataset/gnuradio_sim -d SIGNN_2019_01_1024.hdf5 -m model.h5 --train --dataset-shape 2 1024 --snr 28 &
 ~~~~
 
 For more information, please use the help argument:
@@ -86,7 +86,7 @@ Then navigate to http://0.0.0.0:6006
 ##### 5. Tune Keras model hyperparameters by using keras-tuner library.
 
 ~~~~
-$ python3 signn_tuner.py -p utils/dataset/gnuradio_sim -d SIGNN_2019_01.hdf5 --dataset-shape 2 128 -s artifacts
+$ python3 signn_tuner.py -p utils/dataset/gnuradio_sim -d SIGNN_2019_01.hdf5 --dataset-shape 2 128 -s artifacts --test
 ~~~~
 
 For more information, please use the help argument:

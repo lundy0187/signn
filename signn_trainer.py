@@ -106,26 +106,16 @@ class signn_trainer():
             self.logdir + '/cm')
         self.plotter = plt.plotter(artifacts_dest)
 
+    def __set_gpu_and_backend(self, gpu, backend="tensorflow"):
+        os.environ["KERAS_BACKEND"] = backend
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu)
+
+
     def __configure_accelerators(self):
         if self.enable_gpu is not True:
             os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
         else:
-            gpus = tf.config.experimental.list_physical_devices('GPU')
-            if gpus:
-                # Ask TensorFlow to only allocate 6GB of memory on first GPU
-                try:
-                    tf.config.experimental.set_virtual_device_configuration(
-                        gpus[0],
-                        [tf.config.experimental.VirtualDeviceConfiguration(
-                            memory_limit=6000)])
-                    logical_gpus = tf.config.experimental.list_logical_devices(
-                        'GPU')
-                    print(len(gpus), "Physical GPUs,", len(logical_gpus),
-                          "Logical GPUs")
-                except RuntimeError as e:
-                    # Virtual devices must be set before GPUs
-                    # have been initialized
-                    print(e)
+            self.__set_gpu_and_backend(0)
 
     def __init_dataset(self):
         """
@@ -272,7 +262,7 @@ def argument_parser():
                         dest="split_ratio", action="store", type=float,
                         help='Set the train/validation portions. \
                             (Default: %(default)s)')
-    parser.add_argument("--dataset-shape", default=[2, 128], nargs='+',
+    parser.add_argument("--dataset-shape", default=[2, 1024], nargs='+',
                         dest="dataset_shape", action="store", type=int,
                         help='Set the dataset shape. \
                             (Default: %(default)s)')
