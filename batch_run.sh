@@ -1,5 +1,5 @@
 # set variables
-export SIGNN_MODEL=deepsig
+export SIGNN_MODEL=deepsigresnet
 export SIGNN_FOLDER=utils/dataset/gnuradio_sim
 export SIGNN_FILE=SIGNN_2019_01_1024.hdf5
 export SIGNN_SNR="-10 -6 -2 2 6 10"
