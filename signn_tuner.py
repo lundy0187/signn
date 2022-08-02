@@ -23,6 +23,8 @@ import tensorflow.keras.models as models
 
 import hypermodels
 
+import onnxmltools
+import onnxruntime as rt
 
 class signn_tuner():
     """
@@ -85,7 +87,8 @@ class signn_tuner():
                  split_ratio, dataset_shape,
                  dataset_percent, data_transform,
                  do_testing,
-                 snr, modulation, enable_gpu):
+                 snr, modulation, enable_gpu, 
+                 predict):
         self.target_num = target_num
         self.batch_size = batch_size
         self.epochs = epochs
@@ -94,9 +97,12 @@ class signn_tuner():
         self.tuner_type = tuner_type
         self.max_trials = max_trials
         self.best_models_num = best_models_num
-        self.destination = os.path.join(destination,
-                                        datetime.now().
-                                        strftime("%Y%m%d-%H%M%S"))
+        if predict == True:
+            self.destination = os.path.join(destination)
+        else:
+            self.destination = os.path.join(destination,
+                                            datetime.now().
+                                            strftime("%Y%m%d-%H%M%S"))
         self.split_ratio = split_ratio.copy()
         self.dataset_shape = dataset_shape.copy()
         self.do_testing = do_testing
@@ -254,6 +260,36 @@ class signn_tuner():
         for model_idx, model in enumerate(best_models):
             model.save(os.path.join(best_models_path,
                                     'best_model_' + str(model_idx) + '.h5'))
+    
+    def convert_best_onnx(self):
+        """
+        A method that converts the best saved tf/h5 models to onnx
+        """
+        best_models_path = os.path.join(self.destination, 'best_models/*.h5')
+        for model_idx, filename in enumerate(glob.glob(best_models_path)):
+            # produce tf-keras predictions
+            model = models.load_model(filename)
+            # curate test dataset batch
+            data_in = np.stack(list(self.test_dataset)[0][0])
+            predictions = model.predict(data_in, batch_size=self.batch_size)
+            # extract truth labels
+            truth_labels = np.stack(list(self.test_dataset)[0][1])
+            # produce onnx model compliant w/ onnx==1.0.0
+            output_path = filename + ".onnx"
+            onnx_model = onnxmltools.convert_keras(model)
+            # save onnx file
+            onnxmltools.utils.save_model(onnx_model, output_path)
+            # produce onnx predictions
+            m = rt.InferenceSession(output_path)
+            onnx_pred = m.run([m.get_outputs()[0].name], 
+                                {m.get_inputs()[0].name: data_in})
+            # validate onnx model
+            # (ONNX model outputs aren't exactly the same as Tensorflow)
+            onnxPred = np.argmax(onnx_pred[0], axis=1)
+            tfPred = np.argmax(predictions, axis=1)
+            np.testing.assert_allclose(onnxPred, tfPred, rtol=1e-5)
+            # output final message
+            print("ONNX Model Produced and Validated")
 
     def tune(self):
         """
@@ -320,7 +356,7 @@ def argument_parser():
     parser.add_argument('--no-test', dest="do_testing", action='store_false',
                         help="Disable testing.")
     parser.set_defaults(do_testing=False)
-    parser.add_argument("--dataset-shape", default=[2, 128], nargs='+',
+    parser.add_argument("--dataset-shape", default=[2, 1024], nargs='+',
                         dest="dataset_shape", action="store", type=int,
                         help='Set the dataset shape. \
                             (Default: %(default)s)')
@@ -330,7 +366,7 @@ def argument_parser():
     parser.add_argument("--data-transform", dest='data_transform',
                         default='cartesian',
                         help="Apply transform to dataset examples.")
-    parser.add_argument("--snr", default="-20", nargs='+',
+    parser.add_argument("--snr", default=[-10, -6, -2, 2, 6, 10], nargs='+',
                         dest="snr", action="store", type=int,
                         help='Set the SNR samples to extract from dataset. \
                             (Default: %(default)s)')
@@ -343,6 +379,12 @@ def argument_parser():
     parser.add_argument('--cpu', dest="enable_gpu", action='store_false',
                         help="Use CPU only.")
     parser.set_defaults(enable_gpu=True)
+    parser.add_argument('--predict', dest="predict", action='store_true', 
+                        help="Produce confusion matrix")
+    parser.set_defaults(predict=False)
+    parser.add_argument('--onnx-conv', dest="onnx_conv", action='store_true', 
+                        help="Save ONNX models")
+    parser.set_defaults(onnx_conv=False)
     return parser
 
 
@@ -351,22 +393,27 @@ def main(tuner=signn_tuner, args=None):
         args = argument_parser().parse_args()
 
     t = tuner(dataset_path=args.dataset_path, dataset_name=args.dataset_name,
-              target_num=args.target_num, model=args.model,
-              epochs=args.epochs, batch_size=args.batch_size,
-              shuffle=args.shuffle,
-              shuffle_buffer_size=args.shuffle_buffer_size,
-              tuner_type=args.tuner_type, max_trials=args.max_trials,
-              best_models_num=args.best_models_num,
-              destination=args.destination, do_testing=args.do_testing,
-              split_ratio=args.split_ratio, dataset_shape=args.dataset_shape,
-              dataset_percent=args.dataset_percent,
-              data_transform=args.data_transform,
-              snr=[args.snr],
-              modulation=args.modulation,
-              enable_gpu=args.enable_gpu)
+            target_num=args.target_num, model=args.model,
+            epochs=args.epochs, batch_size=args.batch_size,
+            shuffle=args.shuffle,
+            shuffle_buffer_size=args.shuffle_buffer_size,
+            tuner_type=args.tuner_type, max_trials=args.max_trials,
+            best_models_num=args.best_models_num,
+            destination=args.destination, do_testing=args.do_testing,
+            split_ratio=args.split_ratio, dataset_shape=args.dataset_shape,
+            dataset_percent=args.dataset_percent,
+            data_transform=args.data_transform,
+            snr=[args.snr],
+            modulation=args.modulation,
+            enable_gpu=args.enable_gpu,
+            predict=args.predict)
 
-    t.tune()
-    t.save_best_models()
+    if args.predict == False:
+        t.tune()
+        t.save_best_models()
+
+    if args.onnx_conv:
+        t.convert_best_onnx()
 
     if args.do_testing:
         t.predict()
