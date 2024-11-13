@@ -4,15 +4,17 @@
 ## Requirements
 The requirements are listed in the *requirements3.txt* located in the root directory of this project.
 
-* Tensorflow [2.2.0]
+* Tensorflow [2.0.0]
 * Keras [2.2.4]
-* scikit-learn
-* keras-tuner [1.0.0]
-* protobuf [3.20.0]  
+* sklearn
+* numpy [1.16.2]
+* matplotlib [3.1.0]
+* h5py [2.9.0]
+* keras-tuner [1.0.0]  
 
 In addition, for running some auxilliary scripts some extra dependencies should be met:
 
-*  GNURadio [3.8]
+*  GNURadio [3.7]  
 
 ## Download & Install
 
@@ -22,23 +24,34 @@ $ cd signn
 $ python3 -m pip install --user -r requirements3.txt
 ~~~~
 
-In order to install GNURadio 3.8 please check for the appropriate developement package for your distribution.
+Then download and extract the source material needed for the generation of signals:
+~~~~
+$ cd utils/dataset/gnuradio_sim
+$ wget https://cloud.libre.space/s/rzS3QaXLY6BTN3x/download/source_material.tar.gz
+$ tar xvzf source_material.tar.gz
+$ mv gutenberg_shakespeare.txt ../source_material/
+$ mv serial-s01-e01.wav ../source_material/
+~~~~
+
+In order to install GNURadio 3.7 please check for the appropriate developement package for your distribution.
+
+## Docker Alternative
+
+In contrast with the *Requirements* and *Download & Install* steps above, one can alternatively build a Docker image using the provided *Dockerfile* and then run `signn` within the container:
+
+~~~~
+$ sudo docker build --no-cache -t net-signn:latest .
+$ sudo docker run -it -v ${PWD}/workspace:/root/workspace --network=host net-signn
+~~~~
 
 ## Usage
 
 ##### 1. Generate the signal dataset:
 
-First download and extract the source material need for the generation of signals:
-
-~~~~
-$ cd utils/dataset/gnuradio_sim
-$ wget https://cloud.libre.space/s/rzS3QaXLY6BTN3x/download/source_material.tar.gz
-$ tar xvzf source_material.tar.gz
-~~~~
-
 Then, run the dataset generation script:
 ~~~~
-$ python3 generate_sim_dataset.py
+$ cd utils/dataset/gnuradio_sim
+$ python2 generate_sim_dataset.py
 ~~~~
 
 This command will create the *SIGNN_2019_01.hdf5* dataset. This step can be skipped in order to use a different signal dataset, as long as it follows the specific scheme described here. Depending on the processing power of your machine, this step can take as long as several hours.  
