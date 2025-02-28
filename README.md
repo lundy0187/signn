@@ -1,5 +1,7 @@
 ## signn: Signal Detection and Classification using Neural Networks
 
+## Disclaimer
+Project forked from https://gitlab.com/librespacefoundation/sdrmakerspace/signn, commit SHA hash acb41e9d8c38f959156b68e694837ab3022f49b5  
 
 ## Requirements
 The requirements are listed in the *requirements3.txt* located in the root directory of this project.
